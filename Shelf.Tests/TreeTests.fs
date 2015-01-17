@@ -42,8 +42,8 @@ module TreeTests =
 
     let unpack = List.map (fun (DbEntry(x)) -> x)
 
-    let buildTree l =
-        let tree = Tree.empty 5
+    let buildTree order l =
+        let tree = Tree.empty order
         List.iter (Tree.insert tree) (unpack l)
         tree
 
@@ -118,16 +118,31 @@ module TreeTests =
         getAllNodes tree
         |> Seq.forall checkKeys
 
+    let nodesDoNotExceedBranchFactor tree =
+        getAllNodes tree
+        |> Seq.forall (
+            function
+                | Internal(keys, _) -> keys.Count <= tree.BranchFactor
+                | Leaf(keys, _) -> keys.Count <= tree.BranchFactor)
+
+    let nodesHaveCorrectNumOfChildren tree =
+        getAllNodes tree
+        |> Seq.forall (
+            function
+                | Internal(keys, children) -> children.Count = keys.Count + 1
+                | Leaf(keys, children) -> children.Count = keys.Count)
+
     [<Property(StartSize= 1, EndSize= 1000)>]
-    let ``Check that tree is valid for various input`` (UniqueKeys(entries)) =
-        let tree = buildTree entries
+    let ``Check that tree is valid for various input`` (UniqueKeys(entries)) (Order(order)) =
+        let tree = buildTree order entries
 
         "Can retrieve correct value for all keys"   @| (canRetrieveAllValues tree entries)  .&.
         "All leaves are at same depth"              @| (allLeavesAtSameDepth tree)          .&.
         "All keys are ordered within node"          @| (allKeysAreOrdered tree)             .&.
         "Keys of child to right >= key"             @| (keysToRightAreAtLeastAsLarge tree)  .&.
-        "Keys of child to left are < key"           @| (keysToLeftOfChildAreLesser tree)
-
+        "Keys of child to left are < key"           @| (keysToLeftOfChildAreLesser tree)    .&.
+        "Nodes to not exceed B keys"                @| (nodesDoNotExceedBranchFactor tree)  .&.
+        "Nodes have correct number of children"     @| (nodesHaveCorrectNumOfChildren tree)
 
     
 

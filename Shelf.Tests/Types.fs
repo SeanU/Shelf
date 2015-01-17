@@ -10,6 +10,10 @@ type UniqueKeys =
     | UniqueKeys of DbEntry list
     static member op_Explicit(UniqueKeys(l)) = l
 
+type Order =
+    | Order of int
+    static member op_Explicit(Order(i)) = i
+
 type Generators =
     static member DbEntry () =
         let makeEntry x y =
@@ -53,5 +57,8 @@ type Generators =
             override x.Generator = dbEntryList
             override x.Shrinker l = shrink l}
 
+    static member Order () =
+        {new Arbitrary<Order>() with
+            override x.Generator = Gen.choose (1, 10) |> Gen.map Order}
 
         
